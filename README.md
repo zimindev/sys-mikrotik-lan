@@ -870,5 +870,409 @@ bridge-LAN
 │
 └── DHCP
 ```
+# 1️⃣7️⃣ Configure Wi-Fi
 
-The configuration does **not depend on any previous MikroTik, LHGG, Vodafone, IP addresses, or settings**.
+If your MikroTik router has a wireless interface, you can configure it to provide Wi-Fi access for LAN clients.
+
+The Wi-Fi interface should be connected to the same `bridge-LAN` as the Ethernet LAN ports.
+
+The topology will be:
+
+🌐 Internet
+    │
+    ▼
+  ether1
+    │
+    ▼
+ MikroTik
+    │
+    ├── ether2 ── 💻
+    ├── ether3 ── 💻
+    ├── ether4 ── 💻
+    ├── ether5 ── 💻
+    │
+    └── Wi-Fi ─── 📱 💻 📺
+         │
+         ▼
+     bridge-LAN
+```
+
+## 📡 Check Wireless Interfaces
+
+Open:
+
+```text
+Interfaces
+```
+
+Look for interfaces such as:
+
+```text
+wlan1
+wlan2
+```
+
+For example:
+
+```text
+wlan1 = 2.4 GHz
+wlan2 = 5 GHz
+```
+
+If the wireless interfaces are missing, check:
+
+```text
+System → Packages
+```
+
+Make sure the appropriate wireless package is installed.
+
+---
+
+## 📡 Configure 2.4 GHz Wi-Fi
+
+Open:
+
+```text
+Wireless → WiFi Interfaces
+```
+
+Select:
+
+```text
+wlan1
+```
+
+Click:
+
+```text
+Enable
+```
+
+Then open the wireless configuration.
+
+Set:
+
+```text
+Mode: ap bridge
+SSID: MikroTik-Lab
+Band: 2GHz-B/G/N
+Channel Width: 20/40MHz
+Frequency: auto
+```
+
+For the country, select your actual regulatory domain.
+
+For example:
+
+```text
+Country: Ukraine
+```
+
+---
+
+## 🔐 Configure Wi-Fi Security
+
+Open:
+
+```text
+Wireless → Security Profiles
+```
+
+Click:
+
+```text
++
+```
+
+Create:
+
+```text
+Name: wifi-security
+```
+
+Set:
+
+```text
+Authentication Types:
+WPA2-PSK
+
+Unicast Ciphers:
+aes-ccm
+
+Group Ciphers:
+aes-ccm
+
+WPA2 Pre-Shared Key:
+YourStrongWiFiPassword
+```
+
+Use a strong password with at least 12 characters.
+
+Example:
+
+```text
+MikroTik-Lab-2026!
+```
+
+Then assign this security profile to `wlan1`.
+
+---
+
+## 🌐 Add Wi-Fi to the LAN Bridge
+
+The Wi-Fi interface must belong to the same LAN bridge as the Ethernet LAN ports.
+
+Open:
+
+```text
+Bridge → Ports
+```
+
+Click:
+
+```text
++
+```
+
+Set:
+
+```text
+Interface: wlan1
+Bridge: bridge-LAN
+```
+
+Click:
+
+```text
+Apply → OK
+```
+
+Now Wi-Fi clients and Ethernet clients are part of the same LAN network.
+
+---
+
+## 📡 Configure 5 GHz Wi-Fi
+
+If your MikroTik has a second wireless interface:
+
+```text
+wlan2
+```
+
+configure it as a 5 GHz access point.
+
+Open:
+
+```text
+Wireless → WiFi Interfaces
+```
+
+Select:
+
+```text
+wlan2
+```
+
+Set:
+
+```text
+Mode: ap bridge
+SSID: MikroTik-Lab-5G
+Band: 5GHz-A/N/AC
+Channel Width: 20/40/80MHz
+Frequency: auto
+```
+
+Use the same security profile:
+
+```text
+Security Profile: wifi-security
+```
+
+Then add `wlan2` to:
+
+```text
+bridge-LAN
+```
+
+Open:
+
+```text
+Bridge → Ports
+```
+
+Add:
+
+```text
+Interface: wlan2
+Bridge: bridge-LAN
+```
+
+---
+
+# 🔄 Wi-Fi and Ethernet Network
+
+Both wired and wireless clients will now use the same LAN:
+
+```text
+192.168.88.0/24
+```
+
+The MikroTik router:
+
+```text
+192.168.88.1
+```
+
+DHCP:
+
+```text
+192.168.88.10-192.168.88.254
+```
+
+Example:
+
+```text
+                    🌐 Internet
+                         │
+                         ▼
+                      ether1
+                         │
+                  ┌──────▼──────┐
+                  │   MikroTik  │
+                  │             │
+                  │ 192.168.88.1│
+                  └──────┬──────┘
+                         │
+                    bridge-LAN
+                         │
+          ┌──────────────┼──────────────┐
+          │              │              │
+        ether2         wlan1          wlan2
+          │           2.4 GHz          5 GHz
+          │              │              │
+          ▼              ▼              ▼
+         💻             📱             💻
+```
+
+---
+
+# 🧪 Test Wi-Fi
+
+Connect a phone or laptop to:
+
+```text
+MikroTik-Lab
+```
+
+Enter the configured Wi-Fi password.
+
+The client should receive an IP address such as:
+
+```text
+192.168.88.10
+```
+
+Gateway:
+
+```text
+192.168.88.1
+```
+
+DNS:
+
+```text
+192.168.88.1
+```
+
+Test the router:
+
+```bash
+ping 192.168.88.1
+```
+
+Test Internet:
+
+```bash
+ping 8.8.8.8
+```
+
+Test DNS:
+
+```bash
+ping google.com
+```
+
+If all tests succeed, the MikroTik is providing Internet access through both Ethernet and Wi-Fi.
+
+---
+
+# ⚠️ Important
+
+The exact Wi-Fi menu depends on the RouterOS version and wireless package.
+
+You may see either:
+
+```text
+Wireless
+```
+
+or:
+
+```text
+WiFi
+```
+
+Newer MikroTik devices using the newer WiFi package use the `WiFi` menu, while devices using the legacy wireless package use `Wireless`.
+
+The important concept is the same:
+
+```text
+Wi-Fi interface
+      ↓
+bridge-LAN
+      ↓
+DHCP Server
+      ↓
+NAT
+      ↓
+WAN
+      ↓
+🌐 Internet
+```
+
+---
+
+# ✅ Final Configuration
+
+The finished router provides:
+
+* 🌐 Internet through WAN
+* 🔌 Ethernet LAN
+* 📡 2.4 GHz Wi-Fi
+* 📶 5 GHz Wi-Fi (if supported)
+* 📦 DHCP
+* 🌍 DNS
+* 🔄 NAT
+* 🛡️ Firewall
+
+```text
+WAN
+│
+▼
+ether1
+│
+▼
+MikroTik
+│
+▼
+bridge-LAN
+├── ether2
+├── ether3
+├── ether4
+├── ether5
+├── wlan1 → 2.4 GHz
+└── wlan2 → 5 GHz
+```
+
